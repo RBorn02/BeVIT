@@ -1,6 +1,6 @@
 from timm.models.swin_transformer import SwinTransformer
 from timm.models.vision_transformer import VisionTransformer
-from vit_pytorch.vit import ViT
+from vit import ViT
 from functools import partial
 import torch.nn as nn
 import torch
