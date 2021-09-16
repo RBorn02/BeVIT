@@ -1,5 +1,4 @@
-from timm.models.swin_transformer import SwinTransformer
-from timm.models.vision_transformer import VisionTransformer
+from swin_transformer import SwinTransformer
 from vit import ViT
 from functools import partial
 import torch.nn as nn
@@ -108,7 +107,7 @@ class ViT_Breg(nn.Module):
 class Swin_Breg(nn.Module):
     def __init__(self, img_size=224, patch_size=4, in_chans=3, num_classes=1000,
                  embed_dim=96, depths=(2, 2, 6, 2), num_heads=(3, 6, 12, 24),
-                 breg_dim=128, hidden_size=128, d_subs=200, bn=True):
+                 breg_dim=128, hidden_size=128, d_subs=200, norm_before_nlp='bn', bn=True):
         super().__init__()
         
         self.d_subs = d_subs
@@ -150,9 +149,12 @@ class Swin_Breg(nn.Module):
                               kernel_size=1, groups=d_subs),
                     nn.Conv1d(in_channels=hidden_size*d_subs, out_channels=d_subs, 
                               kernel_size=1, groups=d_subs))
+           
          #Remove last fc layer from backbone
         del self.backbone.head
         self.backbone.head = self.mlp_head
+
+        
         
     def forward(self, x):
         x = self.backbone(x)
@@ -161,3 +163,5 @@ class Swin_Breg(nn.Module):
         sub_x = x.repeat(1, self.d_subs)
         out = self.subs(sub_x.unsqueeze(dim=2))
         return x, out.squeeze(dim=2)
+    
+    
