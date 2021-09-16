@@ -34,7 +34,7 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Train SimCLR')
     parser.add_argument('--breg_dim', default=128, type=int, help='Feature dim for latent vector')
     parser.add_argument('--temperature', default=0.1, type=float, help='Temperature used in softmax')
-    parser.add_argument('--length', default=0.9, type=float, help='value for lenth scale parameter of RBF kernel')
+    parser.add_argument('--length', default=1.5, type=float, help='value for lenth scale parameter of RBF kernel')
     parser.add_argument('--case', default=2, type=int, help='how to determine similarity')
     parser.add_argument('--k_nn', default=200, type=int, help='k in knn')
     parser.add_argument('--batch_size', default=512, type=int, help='batch size')
@@ -43,25 +43,25 @@ if __name__ == '__main__':
     parser.add_argument('--hidden_size', default=32, type=int,
                         help='subnetworks hidden layer size')
     parser.add_argument('--bn', dest='bn', default=True, action='store_true', help=('wether to use batch norm in subs'))
-    parser.add_argument('--lr', default=2e-4, type=float,help='initial learning rate')
-    parser.add_argument('--warmup', default=40, type=int, help='number of linear warmup steps for lr scheduler')
-    parser.add_argument('--wd', default=1e-4, type=float, help='weight decay (default: 1e-4)')
+    parser.add_argument('--lr', default=1e-3, type=float,help='initial learning rate')
+    parser.add_argument('--warmup', default=20, type=int, help='number of linear warmup steps for lr scheduler')
+    parser.add_argument('--wd', default=5e-2, type=float, help='weight decay (default: 1e-4)')
     parser.add_argument('--seed', default=10, type=int, help='seed for initializing training.')
-    parser.add_argument('--workers', default=8, type=int, help='number of data loading workers')
-    parser.add_argument('--lmbda', default=1, type=float, help='sets lambda for weighting the mixed loss')
+    parser.add_argument('--workers', default=64, type=int, help='number of data loading workers')
+    parser.add_argument('--lmbda', default=5, type=float, help='sets lambda for weighting the mixed loss')
     parser.add_argument('--margin', default=1, type=float, help='size of margin for margin loss')
     parser.add_argument('--use_margin', dest='use_margin', default=False, action='store_true', 
                         help='use margin loss')
     parser.add_argument('--base_model',
-                        default='ViT16-B',
+                        default='Swin-B',
                         help='model name',
                         choices=["ViT16-S", "ViT16-B", "ViT32-S", "ViT32-B",
                                  "Swin-T", "Swin-S", "Swin-B"])
-    parser.add_argument('--img_size', default=32, type=int, help='size of images(currently set for Cifar)')
-    parser.add_argument('--resize', dest='resize', default=False, action='store_true', help='resizes all images to 224 for Swin Transformer')
+    parser.add_argument('--img_size', default=224, type=int, help='size of images(currently set for ImageNet)')
+   # parser.add_argument('--resize', dest='resize', default=False, action='store_true', help='resizes all images to 224 for Swin Transformer')
     
     
-    parser.add_argument('--dataset_name', default='cifar100',
+    parser.add_argument('--dataset_name', default='imagenet',
                     help='dataset name', choices=['stl10',
                                                   'cifar10',
                                                   'cifar100',
@@ -76,7 +76,7 @@ if __name__ == '__main__':
     args = parser.parse_args()
     
 
-    
+    # model setup and optimizer config
     if torch.cuda.is_available():
         args.device = torch.device('cuda')
     else:
@@ -96,8 +96,8 @@ if __name__ == '__main__':
     
 ###########################################################
 ### Initiate Model, Optimizer and Scheduler  
-    builder = Builder(args.base_model, args.img_size, args.breg_dim, num_cls,
-                 args.d_subs,args.hidden_size, args.bn,
+    builder = Builder(args.base_model, args.img_size, args.breg_dim,
+                 args.d_subs, args.hidden_size, args.bn,
                  args.device)
     
     model = builder.model
@@ -178,5 +178,3 @@ if __name__ == '__main__':
     sns.lineplot(ax=axes[2], x="epoch", y="test_acc@5", data=df)
     
     fig.savefig(fig_dir)
-    
-    
