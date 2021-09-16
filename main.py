@@ -76,7 +76,7 @@ if __name__ == '__main__':
     args = parser.parse_args()
     
 
-    # model setup and optimizer config
+    
     if torch.cuda.is_available():
         args.device = torch.device('cuda')
     else:
