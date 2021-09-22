@@ -66,6 +66,7 @@ class Builder():
                           embed_dim=128,
                           num_heads=(4, 8, 16, 32),
                           breg_dim=breg_dim,
+                          mlp_dim=1024,
                           d_subs=d_subs,
                           hidden_size=hidden_size,
                           bn=bn).to(device)
