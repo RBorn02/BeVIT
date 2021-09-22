@@ -107,7 +107,7 @@ class ViT_Breg(nn.Module):
 class Swin_Breg(nn.Module):
     def __init__(self, img_size=224, patch_size=4, in_chans=3, num_classes=1000,
                  embed_dim=96, depths=(2, 2, 6, 2), num_heads=(3, 6, 12, 24),
-                 breg_dim=128, hidden_size=128, d_subs=200, norm_before_nlp='bn', bn=True):
+                 breg_dim=128, hidden_size=128, d_subs=200, mlp_dim=768, norm_before_nlp='bn', bn=True):
         super().__init__()
         
         self.d_subs = d_subs
@@ -118,8 +118,8 @@ class Swin_Breg(nn.Module):
                                         num_heads=num_heads)
         
         self.mlp_head = nn.Sequential(
-            nn.BatchNorm1d(num_classes), 
-            nn.Linear(num_classes, 4096),
+            nn.BatchNorm1d(mlp_dim), 
+            nn.Linear(mlp_dim, 4096),
             nn.ReLU(inplace=True),
             nn.BatchNorm1d(4096),
             nn.Linear(4096, 4096),
