@@ -3,30 +3,30 @@ import argparse
 import torchvision
 from torchvision import transforms
 from torch.utils.data import DataLoader
+from torchvision import datasets
 from builder import Builder
 import os
 import pandas as pd
 
 torch.manual_seed(1)
 
+os.environ["CUDA_VISIBLE_DEVICES"] = "0,1,2,3,4,5,6,7"
 
 parser = argparse.ArgumentParser()
 
 parser.add_argument('data', type=str, help='path to finetune dataset')
 parser.add_argument('weights', type=str, help='path to pretrained model weights')
 parser.add_argument('--base_model',
-                        default='ViT16-S',
+                        default='Swin-B',
                         help='model architecture',
                         choices=["ViT16-S", "ViT16-B", "ViT32-S", "ViT32-B", "Swin-S", "Swin-T", "Swin-B"])
-
 parser.add_argument('--d_subs', default=200, type=int, help='k subnets')
-parser.add_argument('--hidden_size', default=128, type=int,
+parser.add_argument('--hidden_size', default=32, type=int,
                         help='subnetworks hidden layer size')
 parser.add_argument('--bn', dest='bn', default=True, action='store_true', help=('wether to use batch norm in subs'))
-parser.add_argument('--img_size', type=int, default=32, help='size of images')
+parser.add_argument('--img_size', type=int, default=224, help='size of images')
 parser.add_argument('--breg_dim', type=int, default=128, help='representation dimension')
-parser.add_argument('--linear_dim', type=int, default=384, help='size of linear probing dimension')
-parser.add_argument('--classes', type=int, default=10, help='number of image classes')
+parser.add_argument('--linear_dim', type=int, default=1024, help='size of linear probing dimension')
 parser.add_argument('--channels', type=int, default=3, help='number of input channels')
 parser.add_argument('--epochs', type=int, default=90, help='number of fine tune epochs')
 parser.add_argument('--batch', type=int, default=512, help='batch size')
@@ -34,10 +34,6 @@ parser.add_argument('--lr', type=float, default=1e-4, help='learning rate for li
 parser.add_argument('--wd', type=float, default=1e-4, help='weight decay for linear probe')
 parser.add_argument('--workers', type=int, default=8, help='number of workers')
 parser.add_argument('--device', default='cuda', help='wether to use gpu')
-parser.add_argument('--dataset', default='cifar10', help='which dataset to use', choices=['cifar10',
-                                                                                          'cifar100',
-                                                                                          'stl10'])
-parser.add_argument('--resize', dest='resize', default=False, action='store_true', help='resizes all images to 224 for Swin Transformer')
 parser.add_argument('--save_path', default=None, help='path to save best model')
 
 args = parser.parse_args()
@@ -54,63 +50,32 @@ else:
     
 
 
-if args.dataset == 'cifar10':
-   normalize = transforms.Normalize(mean=[0.4914, 0.4822, 0.4465],
-                                     std=[0.2023, 0.1994, 0.2010])
-   
-elif args.dataset == 'stl10':
-    normalize = transforms.Normalize(mean=[0.4914, 0.4822, 0.4465],
-                                     std = [0.2471, 0.2435, 0.2616])
-    
-elif args.dataset == 'cifar100':
-    normalize = transforms.Normalize(mean=[0.4914, 0.4822, 0.4465],
-                                     std=[0.2023, 0.1994, 0.2010])
-
-if args.resize:
-    train_transform = transforms.Compose([
-        transforms.Resize(224),
-        #transforms.RandomResizedCrop(args.img_size, scale=(0.2, 1.)),
+train_transform = transforms.Compose([
+        transforms.RandomResizedCrop(args.img_size),
         transforms.RandomHorizontalFlip(),
         transforms.ToTensor(),
-        normalize
+        transforms.Normalize((0.485, 0.456, 0.406), (0.229, 0.224, 0.225)),
     ])
-
-    val_transform = transforms.Compose([transforms.ToTensor(), transforms.Resize(224), normalize])
-   
-else:
-    train_transform = transforms.Compose([
-        #transforms.RandomResizedCrop(args.img_size),
-        transforms.RandomHorizontalFlip(),
+val_transform = transforms.Compose([
+        transforms.Resize(args.img_size * 256/224, interpolation=3),
+        transforms.CenterCrop(args.img_size),
         transforms.ToTensor(),
-        normalize
+        transforms.Normalize((0.485, 0.456, 0.406), (0.229, 0.224, 0.225)),
     ])
 
-    val_transform = transforms.Compose([transforms.Resize(args.img_size),
-                                        transforms.CenterCrop(args.img_size),
-                                        transforms.ToTensor(), normalize])
+dataset_train = datasets.ImageFolder(os.path.join(args.data, "train"), transform=train_transform)
+dataset_val = datasets.ImageFolder(os.path.join(args.data, "val"), transform=val_transform)
     
+train_loader = DataLoader(dataset_train, batch_size=args.batch, shuffle=True, num_workers=args.workers)
+val_loader = DataLoader(dataset_val, batch_size=256, shuffle=False, num_workers=args.workers)
 
-if args.dataset == 'cifar10':
-   train = torchvision.datasets.CIFAR10(args.data, train=True, transform=train_transform)
-   val = torchvision.datasets.CIFAR10(args.data, train=False, transform=val_transform)
-   
-elif args.dataset == 'stl10':
-    train = torchvision.datasets.STL10(args.data, split='train', transform=train_transform)
-    val = torchvision.datasets.STL10(args.data, split='test', transform=val_transform)
-    
-elif args.dataset == 'cifar100':
-    train = torchvision.datasets.CIFAR100(args.data, train=True, transform=train_transform)
-    val = torchvision.datasets.CIFAR100(args.data, train=False, transform=val_transform)
-    
-train_loader = DataLoader(train, batch_size=args.batch, shuffle=True, num_workers=args.workers)
-val_loader = DataLoader(val, batch_size=256, shuffle=False, num_workers=args.workers)
-
+num_cls = len(val_loader.dataset.classes)
 
 ###############################
 #### Load Model
 
-builder = Builder(args.base_model, args.img_size, args.breg_dim, args.classes,
-                 args.d_subs,args.hidden_size, args.bn,
+builder = Builder(args.base_model, args.img_size, args.breg_dim,
+                 args.d_subs, args.hidden_size, args.bn,
                  args.device)
 
 model = builder.model
@@ -119,10 +84,11 @@ model.load_state_dict(torch.load(args.weights))
     
 encoder = model.backbone
 
+
 if args.base_model in ["Swin-S", "Swin-T", "Swin-B"]:
    del encoder.head
 
-   linear_layer = torch.nn.Linear(args.linear_dim, args.classes).cuda()
+   linear_layer = torch.nn.Linear(args.linear_dim, num_cls).cuda()
 
    encoder.head = linear_layer
    encoder.head.weight.data.normal_(mean=0.0, std=0.01)
@@ -135,7 +101,7 @@ if args.base_model in ["Swin-S", "Swin-T", "Swin-B"]:
 else:
    del encoder.mlp_head
 
-   linear_layer = torch.nn.Linear(args.linear_dim, args.classes).cuda()
+   linear_layer = torch.nn.Linear(args.linear_dim, num_cls).cuda()
 
    encoder.mlp_head = linear_layer
    encoder.mlp_head.weight.data.normal_(mean=0.0, std=0.01)
@@ -144,7 +110,10 @@ else:
    for name, param in encoder.named_parameters():
         if name not in ['mlp_head.weight', 'mlp_head.bias']:
             param.requires_grad = False
-    
+
+if torch.cuda.device_count() > 1:
+    print("We have", torch.cuda.device_count(), "GPUs available!")
+    encoder = torch.nn.DataParallel(encoder, device_ids=[0,1,2,3,4,5,6,7])    
 
 
 
@@ -195,7 +164,7 @@ def train_linear_probe(encoder, train_loader, val_loader, lr, epochs, classes, p
                 epoch_val_accuracy += acc / len(val_loader)
                 epoch_val_loss += val_loss / len(val_loader)
                 
-        save(model, path, args.base_model, args.dataset, args.d_subs, args.lr,
+        save(model, path, args.base_model, args.data, args.d_subs, args.lr,
              args.bn, val_acc,  epoch_val_accuracy, e)
         
         val_acc.append(epoch_val_accuracy.item())
@@ -208,9 +177,9 @@ def train_linear_probe(encoder, train_loader, val_loader, lr, epochs, classes, p
                                                                     100 * epoch_val_accuracy))
         
         
-def save(model, path, base_model, dataset, d_subs, lr, bn, acc_ls, acc, epoch):
+def save(model, path, base_model, data, d_subs, lr, bn, acc_ls, acc, epoch):
     save_name_pre = '{}_D{}_{}_{}_{}'.format(
-        dataset, d_subs,
+        'test', d_subs,
         base_model, lr,
         bn)
     
@@ -234,5 +203,4 @@ def save(model, path, base_model, dataset, d_subs, lr, bn, acc_ls, acc, epoch):
     
 if __name__=='__main__':
     train_linear_probe(encoder, train_loader, val_loader, 
-                       args.lr, args.epochs, args.classes, path)
-
+                       args.lr, args.epochs, num_cls, path)
