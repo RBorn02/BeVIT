@@ -57,7 +57,7 @@ train_transform = transforms.Compose([
         transforms.Normalize((0.485, 0.456, 0.406), (0.229, 0.224, 0.225)),
     ])
 val_transform = transforms.Compose([
-        transforms.Resize(args.img_size * 256/224, interpolation=3),
+        transforms.Resize(int(args.img_size * 256/224), interpolation=3),
         transforms.CenterCrop(args.img_size),
         transforms.ToTensor(),
         transforms.Normalize((0.485, 0.456, 0.406), (0.229, 0.224, 0.225)),
