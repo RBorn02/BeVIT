@@ -164,7 +164,7 @@ def fine_tune(encoder, train_loader, val_loader, lr, epochs, classes, path):
                 epoch_val_loss += val_loss / len(val_loader)
                 
         save(model, path, args.base_model, args.data, args.d_subs, args.lr,
-             args.bn, val_acc,  epoch_val_accuracy, e)
+             args.bn, args.fraction, val_acc,  epoch_val_accuracy, e)
         
         val_acc.append(epoch_val_accuracy.item())
                     
@@ -176,11 +176,11 @@ def fine_tune(encoder, train_loader, val_loader, lr, epochs, classes, path):
                                                                     100 * epoch_val_accuracy))
         
         
-def save(model, path, base_model, data, d_subs, lr, bn, acc_ls, acc, epoch):
-    save_name_pre = '{}_D{}_{}_{}_{}'.format(
+def save(model, path, base_model, data, d_subs, lr, bn, fraction, acc_ls, acc, epoch):
+    save_name_pre = '{}_D{}_{}_{}_{}_{}'.format(
         'test', d_subs,
         base_model, lr,
-        bn)
+        bn, fraction)
     
     if os.path.isdir('Fine_Tune_Runs/{}'.format(save_name_pre)):
        path = os.getcwd() + '/Fine_Tune_Runs'.format(save_name_pre)
@@ -203,5 +203,7 @@ def save(model, path, base_model, data, d_subs, lr, bn, acc_ls, acc, epoch):
 if __name__=='__main__':
     fine_tune(encoder, train_loader, val_loader, 
                        args.lr, args.epochs, num_cls, path)
+
+    
 
     
