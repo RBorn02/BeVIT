@@ -45,7 +45,7 @@ if __name__ == '__main__':
     parser.add_argument('--bn', dest='bn', default=True, action='store_true', help=('wether to use batch norm in subs'))
     parser.add_argument('--lr', default=1e-3, type=float,help='initial learning rate')
     parser.add_argument('--warmup', default=20, type=int, help='number of linear warmup steps for lr scheduler')
-    parser.add_argument('--wd', default=5e-2, type=float, help='weight decay (default: 1e-4)')
+    parser.add_argument('--wd', default=5e-2, type=float, help='weight decay (default: 5e-2)')
     parser.add_argument('--seed', default=10, type=int, help='seed for initializing training.')
     parser.add_argument('--workers', default=64, type=int, help='number of data loading workers')
     parser.add_argument('--lmbda', default=5, type=float, help='sets lambda for weighting the mixed loss')
