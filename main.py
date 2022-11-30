@@ -31,7 +31,7 @@ def save_config_file(model_checkpoints_folder, args):
 
 
 if __name__ == '__main__':
-    parser = argparse.ArgumentParser(description='Train SimCLR')
+    parser = argparse.ArgumentParser(description='Train BeVIT')
     parser.add_argument('--breg_dim', default=128, type=int, help='Feature dim for latent vector')
     parser.add_argument('--temperature', default=0.1, type=float, help='Temperature used in softmax')
     parser.add_argument('--length', default=1.5, type=float, help='value for lenth scale parameter of RBF kernel')
@@ -53,15 +53,15 @@ if __name__ == '__main__':
     parser.add_argument('--use_margin', dest='use_margin', default=False, action='store_true', 
                         help='use margin loss')
     parser.add_argument('--base_model',
-                        default='Swin-B',
+                        default='ViT32-B',
                         help='model name',
                         choices=["ViT16-S", "ViT16-B", "ViT32-S", "ViT32-B",
                                  "Swin-T", "Swin-S", "Swin-B"])
-    parser.add_argument('--img_size', default=224, type=int, help='size of images(currently set for ImageNet)')
-   # parser.add_argument('--resize', dest='resize', default=False, action='store_true', help='resizes all images to 224 for Swin Transformer')
+    parser.add_argument('--img_size', default=32, type=int, help='size of images(currently set for ImageNet)')
+    parser.add_argument('--resize', dest='resize', default=False, action='store_true', help='resizes all images to 224 for Swin Transformer')
     
     
-    parser.add_argument('--dataset_name', default='imagenet',
+    parser.add_argument('--dataset_name', default='cifar100',
                     help='dataset name', choices=['stl10',
                                                   'cifar10',
                                                   'cifar100',
