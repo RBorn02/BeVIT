@@ -1,8 +1,9 @@
 # BeVIT
-Code for the BeVIT paper
+Code for BeVIT
 
-TODO: 
+The idea is to investigate if it is possible for a network to learn a functional bregman divergence which can be used as a distance measure for self supervised learning.
 
-      - Look into fine tuning procedure more for Swin Transformer
-      - Object Detection, Segmentation if enough time
-      - Remove some redundencies
+Relevant papers:
+
+MoCo-v3: https://arxiv.org/abs/2104.02057
+Deep Divergence Learning: https://arxiv.org/abs/2005.02612
